@@ -43,6 +43,7 @@ public class Game extends Application {
     private GraphicsContext gc;
     private Stage primaryStage;
     private StackPane[][] cells;
+    private int[][] currentField;
     private Timeline timeline = new Timeline();
     private int timerStep = 0;
 	private TextFlow dialogContainer;
@@ -51,6 +52,7 @@ public class Game extends Application {
 	private static int score;
     public static List<Bomb> bombs;			//список бомб
     public static volatile int countBombs = 3; 		//Колво одновременных бомб 2
+    public static int level = 1;
     
 	public static void main(String[] args) {
 		launch(args);
@@ -59,8 +61,8 @@ public class Game extends Application {
 	@Override
 	public void start(Stage primaryStage) throws Exception {
         this.primaryStage = primaryStage;
-        this.scoreText = new Text("Score: 0");
-        DBUtil.initDataBase();
+        this.scoreText = new Text("Level: 1   Score: 0");
+        DBUtil.initDataBase(this);
 		FXMLLoader loader = new FXMLLoader(getClass().getResource("/ua/itea/MyScene.fxml"));
 		root = loader.load();
 		Scene scene = new Scene(root);
@@ -84,13 +86,13 @@ public class Game extends Application {
             createGame();
         } else {
         	if (code == KeyCode.LEFT) {
-				player.x = Math.max(0, player.x - player.speed);
+        		player.move(Direction.LEFT);
 			} else if (code == KeyCode.UP) {
-				player.y = Math.max(0, player.y - player.speed);
+				player.move(Direction.UP);
         	} else if (code == KeyCode.RIGHT) {
-				player.x = Math.min(width * cellSize - player.height, player.x + player.speed);
+        		player.move(Direction.RIGHT);
 			} else if (code == KeyCode.DOWN) {
-				player.y = Math.min(height * cellSize - + player.width, player.y + player.speed);
+				player.move(Direction.DOWN);
 			}
 			if (code == KeyCode.SPACE && countBombs > 0) {
 				Bomb bomb = new Bomb(player.x, player.y, this.gc);
@@ -109,24 +111,30 @@ public class Game extends Application {
 		createGame();
 	}
 	
-	private void createGame() {
-		score = 0;
-		setScore(score);
+	protected void createGame() {
+		//score = 0;
+        Player.playerSrc = null;
+        Enemy.enemySrc = null;
+        FieldsMatrix.doorSrc = null;
+		scoreText.setText("Level:" + level + "   Score: " + score);
 		isGameStopped = false;
-		canvas = new Canvas(width * cellSize + 100, height * cellSize + 100); //25*20
+		enemyList = new ArrayList<>();
+		canvas = new Canvas(width * cellSize, height * cellSize); //25*20
 		canvas.setLayoutX(100);
 		canvas.setLayoutY(100);
         root.getChildren().add(canvas);
  		player = new Player(cellSize, cellSize);
+ 		currentField = FieldsMatrix.fields.get(Math.min(FieldsMatrix.fields.size(), level) -1);			//меняем поле
         for (int i = 0; i < width; i++) {
         	for (int j = 0; j < height; j++) {
-        		if (FieldsMatrix.FIELD[i][j] == 8) {									//враг        			
+        		if (currentField[i][j] == 8) {									//враг        			
         			enemyList.add(new Enemy(cellSize * j,  cellSize * i));
         		}
         	}
         }
  		Player.playerSrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("player.png"));
  		Enemy.enemySrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("enemy.png"));
+ 		FieldsMatrix.doorSrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("door.png"));
 		bombs = new CopyOnWriteArrayList<>();
 		drawScene();
 		setTurnTimer(40);
@@ -157,12 +165,12 @@ public class Game extends Application {
         }
         for (int i = 0; i < width; i++) {
         	for (int j = 0; j < height; j++) {
-        		if (FieldsMatrix.FIELD[i][j] == 1) {										//стен
+        		if (currentField[i][j] == 1) {										//стен
         			gc.drawImage(FieldsMatrix.wallSrc, cellSize * j, cellSize * i, cellSize, cellSize);
-        		} else if (FieldsMatrix.FIELD[i][j] == 9) {									//дверь
+        		} else if (currentField[i][j] == 9) {									//дверь
         			gc.drawImage(FieldsMatrix.doorSrc, cellSize * j, cellSize * i, cellSize, cellSize);
         			exitDoor = new ExitDoor(cellSize * j, cellSize * i);
-        		} else if (FieldsMatrix.FIELD[i][j] == 2) {									//кирпич
+        		} else if (currentField[i][j] == 2) {									//кирпич
         			gc.drawImage(FieldsMatrix.brickSrc, cellSize * j, cellSize * i, cellSize, cellSize);
         		}
         	}
@@ -170,12 +178,12 @@ public class Game extends Application {
     }
     
 	private void createContent() {
-		this.root.setPrefSize((double)(this.width * cellSize), (double)(this.height * cellSize)); //+ 200
-	       for(int x = 0; x < this.width; x++) {
-	            for(int y = 0; y < this.height; y++) {
+		this.root.setPrefSize((double)(width * cellSize), (double)(height * cellSize)); //+ 200
+	       for(int x = 0; x < width; x++) {
+	            for(int y = 0; y < height; y++) {
 	                ObservableList<Node> children = this.cells[x][y].getChildren();                
 	                Rectangle cell;
-	                /*if (children.size() > 0) {			//сетка
+	                /*if (children.size() > 0) {			//сетка для debug
 	                    cell = (Rectangle)children.get(0);
 	                    cell.setWidth((double)(cellSize - 1));
 	                    cell.setHeight((double)(cellSize - 1));
@@ -206,10 +214,10 @@ public class Game extends Application {
 	 * @param height
 	 */
 	private void setScreenSize() {
-        this.cells = new StackPane[this.width][this.height];
+        this.cells = new StackPane[width][height];
 
-        for(int x = 0; x < this.width; x++) {
-            for(int y = 0; y < this.height; y++) {
+        for(int x = 0; x < width; x++) {
+            for(int y = 0; y < height; y++) {
                 this.cells[x][y] = new StackPane(new Node[]{new Rectangle(), new Text(), new Text()});
             }
         }		
@@ -234,12 +242,14 @@ public class Game extends Application {
 	private void onTurn(int step) {
         for (Enemy enemy : enemyList) {
     		if (player.isCollision(enemy)) {
-    			gameOver(); //Проиграл
+    			score = 0;
+    			gameOver("You lose!"); //Проиграл
     		}
         }        
         for (Bomb bomb : bombs) {
         	if (bomb.checkBurn(player)) {
-        		gameOver();
+        		score = 0;
+        		gameOver("You lose!");
         	}
             Iterator<Enemy> it = enemyList.iterator();
             while (it.hasNext()) {
@@ -247,7 +257,7 @@ public class Game extends Application {
             	if (bomb.checkBurn(enemy)) {            		
             		it.remove();
         			score += enemy.score;
-            		setScore(score);
+        			scoreText.setText("Level:" + level + "   Score: " + score);
             		//DBUtil.updateScore(score);		//сохранить в бд	
             	}
             }
@@ -256,7 +266,9 @@ public class Game extends Application {
 			win();
 		}
 		player.move();
-		//setScore(score);
+		for (Enemy enemy : enemyList) {
+			enemy.move();
+		}
 		drawScene();	//перерисовать
 	}
 	
@@ -264,25 +276,31 @@ public class Game extends Application {
      * Обновить счет
 	 * @param score очки
 	 */
-	private void setScore(int score) {
-		this.scoreText.setText("Score: " + score);
+	protected void setLevelScore(int level, int score) {
+		Game.level = level;
+		Game.score = score;		
 	}
 
-	private void gameOver() {
+	protected void gameOver(String messageText) {
+		gc.clearRect(0, 0, width * cellSize, height * cellSize);		//(100, 100, width * cellSize + 100, height * cellSize + 100);
         isGameStopped = true;
         Player.playerSrc = null;
         Enemy.enemySrc = null;
-        bombs.clear();
+        FieldsMatrix.doorSrc = null;
+        bombs.clear();        
         this.timeline.stop();
-        showMessageDialog(Color.RED, "Вы проиграли!", Color.BLACK, 30);
+        showMessageDialog(Color.RED, messageText, Color.BLACK, 30);
     }    
 
     private void win() {
         isGameStopped = true;
-        Player.playerSrc = null;        
+        Player.playerSrc = null;
+        Enemy.enemySrc = null;
+        FieldsMatrix.doorSrc = null;
         bombs.clear();
+        level ++;
         this.timeline.stop();
-        showMessageDialog(Color.GREEN, "Вы выиграли!", Color.YELLOW, 50);
+        showMessageDialog(Color.GREEN, "You win!", Color.YELLOW, 50);
     }
     
     public void showMessageDialog(Color cellColor, String message, Color textColor, int textSize) {
@@ -310,9 +328,9 @@ public class Game extends Application {
         this.scoreText.setFill(Color.BLACK);
         StackPane scorePane = new StackPane(new Node[]{this.scoreText});
         scorePane.setBorder(new Border(new BorderStroke[]{new BorderStroke(Color.BLACK, BorderStrokeStyle.SOLID, CornerRadii.EMPTY, BorderWidths.DEFAULT)}));
-        scorePane.setLayoutY((double)(this.height * cellSize + 110 + 6));
-        Rectangle rectangle = new Rectangle((double)(this.width * cellSize / 2), 20.0, Color.WHITE);
-        scorePane.setLayoutX((double)(124 + this.width * cellSize / 4));
+        scorePane.setLayoutY((double)(height * cellSize + 110 + 6));
+        Rectangle rectangle = new Rectangle((double)(width * cellSize / 2), 20.0, Color.WHITE);
+        scorePane.setLayoutX((double)(124 + width * cellSize / 4));
         scorePane.getChildren().add(0, rectangle);
         this.root.getChildren().add(scorePane);
     }

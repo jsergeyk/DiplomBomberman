@@ -12,20 +12,28 @@ import java.sql.Statement;
 public class DBUtil {
 	
 	private static Connection connection;
+	private final static String connectionString = "jdbc:sqlite:sample.db";
+	private static Game game;
 	
-	public static void initDataBase() {
+	public static void initDataBase(Game game) {
+		DBUtil.game = game;
 		try {
-			String url = "jdbc:postgresql://localhost:5432/TestData?user=supervisor&password=admin&useUnicode=yes&characterEncoding=utf-8";
-			connection = DriverManager.getConnection(url);
-			Class.forName("org.postgresql.Driver");
-			System.out.println("Connected to PostgreSQL database!");
+			//String url = "jdbc:postgresql://localhost:5432/TestData?user=supervisor&password=admin&useUnicode=yes&characterEncoding=utf-8";
+			connection = DriverManager.getConnection(connectionString);
+			//Class.forName("org.postgresql.Driver");
+			Class.forName("org.sqlite.JDBC");
+			System.out.println("Connected to sqlite database!");
 			Statement statement = connection.createStatement();
-			statement.execute("CREATE SCHEMA IF NOT EXISTS bomber");
+			/*statement.execute("CREATE SCHEMA IF NOT EXISTS bomber");
 			statement.execute("SET search_path TO bomber, public");
 			statement.execute("CREATE TABLE IF NOT EXISTS users(id SERIAL primary key, name varchar(100), "
-					+ "level numeric(3,0) NOT NULL DEFAULT 1, score numeric(20,0));");
-			//statement.execute("CREATE TABLE IF NOT EXISTS users(id SERIAL primary key, name varchar(100), score numeric(20,0));");
-			statement.close();
+					+ "level numeric(3,0) NOT NULL DEFAULT 1, score numeric(20,0));");			
+			statement.close();*/
+			statement.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, "+
+					"name TEXT NOT NULL," +
+					"level INTEGER NOT NULL DEFAULT 1," +
+					"score INTEGER)");
+
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
@@ -57,23 +65,38 @@ public class DBUtil {
 	 * @param score очки
 	 */
 	public static void saveGame(String name, int level, int score) {
-		try {
-			Statement statement = connection.createStatement();
+		try (Statement statement = connection.createStatement()) {			
 			statement.execute("INSERT INTO users (name, level, score) VALUES ('" + name + "', " + level + ", " + score +")");
-			statement.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	public static void loadGame(String name) {
-		try {
-			Statement statement = connection.createStatement();
-			//statement.execute("INSERT INTO users (name, level, score) VALUES ('" + name + "', " + level + ", " + score +")");
-			statement.close();
+	 /*
+	  * @return level
+	  */
+	public static int loadGame(String name) {
+		int level = 1;
+		int score = 0;
+		try (Statement statement = connection.createStatement()) {			
+			ResultSet rs = statement.executeQuery("SELECT level, score FROM users WHERE name = '" + name + "' ORDER BY level DESC LIMIT 1");
+			System.out.print("loadGame..." );
+			int rowCount=0;
+			while (rs.next()) {
+				rowCount++;
+				level = rs.getInt("level");
+				score = rs.getInt("score");
+				System.out.println("Sucess! Player: " + name  + " level: " + level);
+			}
+			if (rowCount > 0) {				
+				game.gameOver("Sucess! Player: " + name  + " level: " + level);
+				game.setLevelScore(level, score);
+			} else {
+				System.out.println("Player " + name  + " does not exist!");
+			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		return level;
 	}
 	
 	public static void closeConnection() {
