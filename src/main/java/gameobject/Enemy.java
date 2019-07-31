@@ -19,7 +19,7 @@ public class Enemy extends Player {
 		
 	public int score = 5 * Game.level;
 	public static Image enemySrc;
-	private int speed = (int)1.5 * Game.level;
+	private int speed = (int)(1.5 * Game.level);
 	private Direction direction = Direction.RIGHT;
 	private Random r;
 	
