@@ -1,15 +1,10 @@
 package gameobject;
 
 import javafx.scene.canvas.GraphicsContext;
-import static ua.itea.Game.cellSize;
-
-import java.sql.Time;
+import javafx.scene.image.Image;
 import java.util.Random;
 
-import javafx.scene.image.Image;
-import javafx.scene.input.KeyCode;
 import ua.itea.Direction;
-import ua.itea.FieldsMatrix;
 import ua.itea.Game;
 
 /**
@@ -19,8 +14,7 @@ public class Enemy extends Player {
 		
 	public int score = 5 * Game.level;
 	public static Image enemySrc;
-	private int speed = (int)1.5 * Game.level;
-	private Direction direction = Direction.RIGHT;
+	private int speed = (int)(1.5 * Game.level);	
 	private Random r;
 	
 	/**
@@ -30,14 +24,15 @@ public class Enemy extends Player {
 	public Enemy(int x, int y) {
 		super(x, y);
 		r = new Random();
+		setDirection(Direction.UP);
 	}
 	
 	public void move() {
-		super.move(direction);
+		super.move(speed);
 	}
 	
 	@Override
-	protected int getSpeed() {
+	public int getSpeed() {
 		return speed;
 	}
 
@@ -52,21 +47,22 @@ public class Enemy extends Player {
 	 */
 	@Override
 	protected void changeDirection() {
+		
 		switch (r.nextInt(4)) {
 		case 0:
-			direction = Direction.UP;
+			setDirection(Direction.UP);
 			break;
 		case 1:
-			direction = Direction.RIGHT;
+			setDirection(Direction.RIGHT);
 			break;
 		case 2:
-			direction = Direction.LEFT;			
+			setDirection(Direction.LEFT);
 			break;
 		case 3:
-			direction = Direction.DOWN;
+			setDirection(Direction.DOWN);
 			break;
 		default:
-			direction = Direction.RIGHT;
+			setDirection(Direction.UP);
 			break;
 		}
 	}

@@ -22,9 +22,6 @@ public abstract class GameObject {
         this.height = height;
     }
     
-    public abstract void draw(GraphicsContext gc);
-    
-    
     public boolean isCollision(GameObject gameObject) {
         if (!isCollisionPossible(gameObject))
             return false;

@@ -5,28 +5,28 @@ import static ua.itea.Game.cellSize;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
 import ua.itea.Direction;
-import ua.itea.FieldsMatrix;
+import ua.itea.Drawable;
+import static ua.itea.Game.currentField;
 
 /**
  * @author Admin
  */
-public class Player extends GameObject { 
+public class Player extends GameObject implements Drawable{ 
 
 	public static Image playerSrc;
-    //public int posX;
-    //public int posY;
-    public int speed = 5;
+	private int speed = 5;
+    private Direction direction = Direction.NONE;
     
     /**
      * Указывает на передвижение персонажа  по оси X.
      * 1 - движение вправо, -1 - движение влево, 0 - нет движения.
      */
-    public int directionX = 0;
+    //public int directionX = 0;
      /**
      * Указывает на передвижение персонажа  по оси Y.
      * 1 - движение вниз, -1 - движение вверх, 0 - нет движения.
      */
-    public int directionY = 0;
+    //public int directionY = 0;
     
     /**
      * Размер персонажа по ширине.
@@ -47,19 +47,9 @@ public class Player extends GameObject {
     
     public Player(int x, int y) {
     	super(x, y);
-        //String name = "/img/player.png";
-        //imageSrc = new ImageIcon(getClass().getResource(name)).getImage();
-        //imageSrc = new Image("/img/player.png");
     }
-
-	/**
-	 * 
-	 */
-	public void move() {
-		//x = x + speed;
-	}
     
-    //@Override
+    @Override
     public void draw(GraphicsContext gc) {
     	gc.drawImage(playerSrc, x, y, width, height);
     }
@@ -67,39 +57,46 @@ public class Player extends GameObject {
 	/**
 	 * @param direction направление движения
 	 */
-	public void move(Direction direction) {
-		int speed = getSpeed();
+	public void move(int speed) {
 		if (direction == Direction.LEFT) {
-        	int topleft = FieldsMatrix.FIELD[y / cellSize] [(x -speed) / cellSize];
-        	int downleft = FieldsMatrix.FIELD[(y + height -1) / cellSize] [(x -speed) / cellSize];
-    		if (topleft != 1 && downleft != 1 && topleft != 2 && downleft != 2) {// - speed == FieldsMatrix.FIELD[i][j] == 1) {
+        	int topleft = currentField[y / cellSize] [(x -speed) / cellSize];
+        	int downleft = currentField[(y + height -1) / cellSize] [(x -speed) / cellSize];
+    		if (topleft != 1 && downleft != 1 && topleft != 2 && downleft != 2) {
     			x = Math.max(0, x - speed);
-    		} else {
+    		} else if (speed == 1) {
     			changeDirection();
+    		} else {
+    			move(--speed);
     		}
 		} else if (direction == Direction.UP) {
-        	int topleft = FieldsMatrix.FIELD[(y -speed) / cellSize ] [x / cellSize];
-        	int topright = FieldsMatrix.FIELD[(y -speed) / cellSize] [(x + width -1) / cellSize];
+        	int topleft = currentField[(y -speed) / cellSize ] [x / cellSize];
+        	int topright = currentField[(y -speed) / cellSize] [(x + width -1) / cellSize];
     		if(topleft != 1 && topright != 1 && topleft != 2 && topright != 2) {
     			y = Math.max(0, y - speed);
-    		} else {
+    		} else if (speed == 1) {
     			changeDirection();
+    		} else {
+    			move(--speed);
     		}
     	} else if (direction == Direction.RIGHT) {
-        	int topright = FieldsMatrix.FIELD[y / cellSize] [(x + width) / cellSize];					//width уже включает +1
-        	int downright = FieldsMatrix.FIELD[(y + height-1) / cellSize] [(x + width) / cellSize];
+        	int topright = currentField[y / cellSize] [(x + width -1 + speed) / cellSize];					//width уже включает +1
+        	int downright = currentField[(y + height-1) / cellSize] [(x + width -1 + speed) / cellSize];
         	if (topright != 1 && downright != 1 && topright != 2 && downright != 2) {
         		x = Math.min(width * cellSize - height, x + speed);
-    		} else {
+    		} else if (speed == 1) {
     			changeDirection();
+    		} else {
+    			move(--speed);
     		}
 		} else if (direction == Direction.DOWN) {
-        	int downleft = FieldsMatrix.FIELD[(y + height) / cellSize] [x / cellSize];
-        	int downright = FieldsMatrix.FIELD[(y + height) / cellSize] [(x + width -1) / cellSize];	//height уже включает +1
+        	int downleft = currentField[(y + height -1 + speed) / cellSize] [x / cellSize];
+        	int downright = currentField[(y + height -1 + speed) / cellSize] [(x + width -1) / cellSize];	//height уже включает +1
         	if (downleft != 1 && downright != 1 && downleft != 2 && downright != 2) {
         		y = Math.min(height * cellSize - + width, y + speed);
-    		} else {
+    		} else if (speed == 1) {
     			changeDirection();
+    		} else {
+    			move(--speed);
     		}
 		}
 	}
@@ -107,9 +104,23 @@ public class Player extends GameObject {
 	/**
 	 * @return скорость движения
 	 */
-	protected int getSpeed() {
+	public int getSpeed() {
 		return speed;
 	}
 
 	protected void changeDirection() {}
+
+	/**
+	 * @param direction направление движения
+	 */
+	public void setDirection(Direction direction) {
+		this.direction = direction;		
+	}
+
+	/**
+	 * @return the direction направление движения
+	 */
+	public Direction getDirection() {
+		return direction;
+	}
 }

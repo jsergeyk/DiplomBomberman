@@ -42,14 +42,14 @@ public class Game extends Application {
     private Canvas canvas;
     private GraphicsContext gc;
     private Stage primaryStage;
-    private StackPane[][] cells;
-    private int[][] currentField;
+    private StackPane[][] cells;    
     private Timeline timeline = new Timeline();
     private int timerStep = 0;
 	private TextFlow dialogContainer;
 	private Text scoreText;
 	
 	private static int score;
+	public static int[][] currentField;
     public static List<Bomb> bombs;			//список бомб
     public static volatile int countBombs = 3; 		//Колво одновременных бомб 2
     public static int level = 1;
@@ -67,7 +67,10 @@ public class Game extends Application {
 		root = loader.load();
 		Scene scene = new Scene(root);
         scene.setOnKeyPressed((event) -> {
-        	this.onKeyPress(event.getCode());
+        	onKeyPress(event.getCode());
+        });
+        scene.setOnKeyReleased((event) -> {
+            onKeyReleased(event.getCode());            
         });
 		this.initialize();				
 		primaryStage.setScene(scene);
@@ -85,15 +88,15 @@ public class Game extends Application {
         	dialogContainer.setVisible(false);
             createGame();
         } else {
-        	if (code == KeyCode.LEFT) {
-        		player.move(Direction.LEFT);
-			} else if (code == KeyCode.UP) {
-				player.move(Direction.UP);
-        	} else if (code == KeyCode.RIGHT) {
-        		player.move(Direction.RIGHT);
-			} else if (code == KeyCode.DOWN) {
-				player.move(Direction.DOWN);
-			}
+            if (code == KeyCode.RIGHT) {
+                player.setDirection(Direction.RIGHT);
+            } else if (code == KeyCode.LEFT) {
+                player.setDirection(Direction.LEFT);
+            } else if (code == KeyCode.UP) {
+                player.setDirection(Direction.UP);
+            } else if (code == KeyCode.DOWN) {
+                player.setDirection(Direction.DOWN);
+            }
 			if (code == KeyCode.SPACE && countBombs > 0) {
 				Bomb bomb = new Bomb(player.x, player.y, this.gc);
 				bombs.add(bomb);			//new Thread(bomb).start();
@@ -102,6 +105,18 @@ public class Game extends Application {
         }
 	}
 
+    public void onKeyReleased(KeyCode key) {
+        if (key == KeyCode.RIGHT) {
+            player.setDirection(Direction.NONE);
+        } else if (key == KeyCode.LEFT) {
+            player.setDirection(Direction.NONE);
+        } else if (key == KeyCode.UP) {
+            player.setDirection(Direction.NONE);
+        } else if (key == KeyCode.DOWN) {
+            player.setDirection(Direction.NONE);
+        }
+    }
+    
 	private void initialize() {
         setScreenSize();
 		createContent();
@@ -135,6 +150,7 @@ public class Game extends Application {
  		Player.playerSrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("player.png"));
  		Enemy.enemySrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("enemy.png"));
  		FieldsMatrix.doorSrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("door.png"));
+ 		FieldsMatrix.brickSrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("brick.png"));
 		bombs = new CopyOnWriteArrayList<>();
 		drawScene();
 		setTurnTimer(40);
@@ -265,7 +281,7 @@ public class Game extends Application {
 		if (player.isCollision(exitDoor)) {
 			win();
 		}
-		player.move();
+		player.move(player.getSpeed());
 		for (Enemy enemy : enemyList) {
 			enemy.move();
 		}
@@ -287,6 +303,7 @@ public class Game extends Application {
         Player.playerSrc = null;
         Enemy.enemySrc = null;
         FieldsMatrix.doorSrc = null;
+        FieldsMatrix.brickSrc = null;
         bombs.clear();        
         this.timeline.stop();
         showMessageDialog(Color.RED, messageText, Color.BLACK, 30);
@@ -297,6 +314,7 @@ public class Game extends Application {
         Player.playerSrc = null;
         Enemy.enemySrc = null;
         FieldsMatrix.doorSrc = null;
+        FieldsMatrix.brickSrc = null;
         bombs.clear();
         level ++;
         this.timeline.stop();
@@ -316,7 +334,7 @@ public class Game extends Application {
         double preferredWidth = messageText.getLayoutBounds().getWidth();
         messageText.setFill(textColor);
         dialogContainer.setLayoutX((this.root.getWidth() - preferredWidth) / 2.0D);
-        dialogContainer.setLayoutY(root.getHeight() / 2.0D - 30.0D);
+        dialogContainer.setLayoutY(30);
         dialogContainer.setBackground(new Background(new BackgroundFill[]{new BackgroundFill(cellColor, CornerRadii.EMPTY, Insets.EMPTY)}));
         dialogContainer.setVisible(true);
         dialogContainer.getChildren().add(messageText);
@@ -343,10 +361,6 @@ public class Game extends Application {
 
 		public ExitDoor(int x, int y) {
 			super(x, y);
-		}
-
-		@Override
-		public void draw(GraphicsContext gc) {			
-		}    	
+		}  	
     }
 }

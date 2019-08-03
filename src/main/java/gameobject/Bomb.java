@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.Image;
+import ua.itea.Drawable;
 import ua.itea.Game;
 
 import static ua.itea.Game.cellSize;
 /**
  * @author SergeyK
  */
-public class Bomb extends GameObject implements Runnable {
+public class Bomb extends GameObject implements Drawable, Runnable {
 
 	public static final Image bombSrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("bomb.png"));
 	public static final Image fireSrc = new Image(Thread.currentThread().getContextClassLoader().getResourceAsStream("fire.png"));
@@ -27,7 +28,7 @@ public class Bomb extends GameObject implements Runnable {
 		new Thread(this).start();		
 	}
 
-	//@Override
+	@Override
 	public void draw(GraphicsContext gc) {
 		if (visible) {
 			gc.drawImage(Bomb.bombSrc, x, y, cellSize, cellSize);
