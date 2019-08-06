@@ -106,13 +106,7 @@ public class Game extends Application {
 	}
 
     public void onKeyReleased(KeyCode key) {
-        if (key == KeyCode.RIGHT) {
-            player.setDirection(Direction.NONE);
-        } else if (key == KeyCode.LEFT) {
-            player.setDirection(Direction.NONE);
-        } else if (key == KeyCode.UP) {
-            player.setDirection(Direction.NONE);
-        } else if (key == KeyCode.DOWN) {
+        if (key == KeyCode.RIGHT || key == KeyCode.LEFT || key == KeyCode.UP || key == KeyCode.DOWN) {
             player.setDirection(Direction.NONE);
         }
     }
